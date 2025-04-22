@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lap Scanner</title>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    #reader { width: 300px; margin-bottom: 20px; }
+    .card { border: 1px solid #ccc; padding: 10px; border-radius: 8px; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Lap Scanner</h1>
+  <div id="reader"></div>
+
+  <div class="card">
+    <strong>Student:</strong> <span id="student-name">None</span><br>
+    <strong>Grade:</strong> <span id="student-grade">-</span><br>
+    <strong>Laps:</strong> <span id="student-laps">0</span>
+  </div>
+  <div class="card">
+    <strong>Total Scans on This Device:</strong> <span id="device-count">0</span>
+  </div>
+
+  <div class="card">
+    <label for="csvUpload"><strong>Upload Student CSV:</strong></label>
+    <input type="file" id="csvUpload" accept=".csv" />
+  </div>
+
+  <script>
+    let studentDB = {
+      "1001": { name: "Emma R.", grade: 4 },
+      "1002": { name: "Jack T.", grade: 3 },
+      "1003": { name: "Ava M.", grade: 5 },
+      "1004": { name: "Liam S.", grade: 4 },
+      "1005": { name: "Mia K.", grade: 3 },
+      "1006": { name: "Noah B.", grade: 5 },
+      "1007": { name: "Olivia D.", grade: 4 },
+      "1008": { name: "Ethan H.", grade: 3 },
+      "1009": { name: "Sophia L.", grade: 5 },
+      "1010": { name: "Lucas W.", grade: 4 }
+    };
+
+    const studentLaps = {};
+    const lastScanTime = {};
+    let deviceTotal = 0;
+    const SCAN_COOLDOWN_MS = 20000; // 20 seconds
+
+    async function sendToGoogleSheet(id, name, grade, laps) {
+      const timestamp = new Date().toISOString();
+      try {
+        await fetch("https://script.google.com/macros/s/AKfycbx0zJgAAy2qlua6C4OtP0bQHTObb4SGaXCf7qgKCbyXdoY0jHwSag0wxPWmI9nGwMJKig/exec", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            studentId: id,
+            name: name,
+            grade: grade,
+            laps: laps,
+            timestamp: timestamp
+          })
+        });
+      } catch (error) {
+        console.error("Failed to sync with Google Sheets", error);
+      }
+    }
+
+    function updateUI(id) {
+      const student = studentDB[id];
+      if (!student) return;
+
+      studentLaps[id] = (studentLaps[id] || 0) + 1;
+      deviceTotal++;
+
+      document.getElementById("student-name").textContent = student.name;
+      document.getElementById("student-grade").textContent = student.grade;
+      document.getElementById("student-laps").textContent = studentLaps[id];
+      document.getElementById("device-count").textContent = deviceTotal;
+
+      sendToGoogleSheet(id, student.name, student.grade, studentLaps[id]);
+    }
+
+    function onScanSuccess(qrMessage) {
+      const now = Date.now();
+
+      if (studentDB[qrMessage]) {
+        if (!lastScanTime[qrMessage] || (now - lastScanTime[qrMessage]) >= SCAN_COOLDOWN_MS) {
+          lastScanTime[qrMessage] = now;
+          updateUI(qrMessage);
+        } else {
+          console.log("Duplicate scan ignored for student ID " + qrMessage);
+        }
+      } else {
+        alert("Unknown student ID: " + qrMessage);
+      }
+    }
+
+    const html5QrCode = new Html5Qrcode("reader");
+    html5QrCode.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: 250 },
+      onScanSuccess
+    );
+
+    // CSV Upload Logic
+    document.getElementById("csvUpload").addEventListener("change", (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const lines = e.target.result.split("\n");
+        for (let line of lines) {
+          const [id, name, grade] = line.trim().split(",");
+          if (id && name && grade) {
+            studentDB[id] = { name: name.trim(), grade: parseInt(grade.trim()) };
+          }
+        }
+        alert("Student list loaded.");
+      };
+      reader.readAsText(file);
+    });
+  </script>
+</body>
+</html>
