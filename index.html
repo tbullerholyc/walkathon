@@ -6,6 +6,11 @@
   <title>Lap Scanner</title>
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <style>
+    #student-laps {
+  font-size: 48px;
+  font-weight: bold;
+  color: #2c3e50;
+}
     body { font-family: sans-serif; padding: 20px; }
     #reader { width: 300px; margin-bottom: 20px; }
     .card { border: 1px solid #ccc; padding: 10px; border-radius: 8px; margin-bottom: 10px; }
@@ -23,6 +28,13 @@
   <div class="card">
     <strong>Total Scans on This Device:</strong> <span id="device-count">0</span>
   </div>
+<div id="milestone" style="margin-top: 20px; text-align: center;">
+  <img id="milestone-icon" src="" alt="" style="height: 120px; display: none;" />
+</div>
+
+<audio id="ding" src="ding.mp3" preload="auto"></audio>
+<audio id="tada" src="tada.mp3" preload="auto"></audio>
+<audio id="celebration" src="celebration.mp3" preload="auto"></audio>
 
   <div class="card">
     <label for="csvUpload"><strong>Upload Student CSV:</strong></label>
@@ -73,19 +85,52 @@
 
 
     function updateUI(id) {
-      const student = studentDB[id];
-      if (!student) return;
+  const student = studentDB[id];
+  if (!student) return;
 
-      studentLaps[id] = (studentLaps[id] || 0) + 1;
-      deviceTotal++;
+  studentLaps[id] = (studentLaps[id] || 0) + 1;
+  deviceTotal++;
 
-      document.getElementById("student-name").textContent = student.name;
-      document.getElementById("student-grade").textContent = student.grade;
-      document.getElementById("student-laps").textContent = studentLaps[id];
-      document.getElementById("device-count").textContent = deviceTotal;
+  const laps = studentLaps[id];
+  const grade = student.grade;
+  const name = student.name;
 
-      sendToGoogleSheet(id, student.name, student.grade, studentLaps[id]);
-    }
+  document.getElementById("student-name").textContent = name;
+  document.getElementById("student-grade").textContent = grade;
+  document.getElementById("student-laps").textContent = laps;
+  document.getElementById("device-count").textContent = deviceTotal;
+
+  // Default to ding sound
+  const ding = document.getElementById("ding");
+  const tada = document.getElementById("tada");
+  const celebration = document.getElementById("celebration");
+  const milestoneIcon = document.getElementById("milestone-icon");
+
+  let showSticker = false;
+  let showRibbon = false;
+
+  // Milestone logic
+  if (laps === 50) {
+    showRibbon = true;
+    milestoneIcon.src = "ribbon.png"; // Make sure this file exists
+    milestoneIcon.style.display = "block";
+    celebration.play();
+  } else if (
+    (grade <= 2 && laps % 5 === 0) ||
+    (grade >= 3 && (laps === 5 || (laps > 5 && (laps - 5) % 10 === 0)))
+  ) {
+    showSticker = true;
+    milestoneIcon.src = "sticker.png"; // Make sure this file exists
+    milestoneIcon.style.display = "block";
+    tada.play();
+  } else {
+    milestoneIcon.style.display = "none";
+    ding.play();
+  }
+
+  sendToGoogleSheet(id, name, grade, laps);
+}
+
 
     function onScanSuccess(qrMessage) {
       const now = Date.now();
