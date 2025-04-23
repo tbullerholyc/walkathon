@@ -36,9 +36,7 @@
   <div class="card">
     <strong>Total Scans on This Device:</strong> <span id="device-count">0</span>
   </div>
-<div id="milestone" style="margin-top: 20px; text-align: center;">
-  <img id="milestone-icon" src="" alt="" style="height: 120px; display: none;" />
-</div>
+
 
 <audio id="ding" src="ding.mp3" preload="auto"></audio>
 <audio id="tada" src="tada.mp3" preload="auto"></audio>
@@ -112,29 +110,36 @@
   const ding = document.getElementById("ding");
   const tada = document.getElementById("tada");
   const celebration = document.getElementById("celebration");
-  const milestoneIcon = document.getElementById("milestone-icon");
+  const milestoneImage = document.getElementById("milestone-image");
+
 
   let showSticker = false;
   let showRibbon = false;
 
   // Milestone logic
   if (laps === 50) {
-    showRibbon = true;
-    milestoneIcon.src = "ribbon.png"; // Make sure this file exists
-    milestoneIcon.style.display = "block";
-    celebration.play();
-  } else if (
-    (grade <= 2 && laps % 5 === 0) ||
-    (grade >= 3 && (laps === 5 || (laps > 5 && (laps - 5) % 10 === 0)))
-  ) {
-    showSticker = true;
-    milestoneIcon.src = "sticker.png"; // Make sure this file exists
-    milestoneIcon.style.display = "block";
-    tada.play();
-  } else {
-    milestoneIcon.style.display = "none";
-    ding.play();
-  }
+  showRibbon = true;
+  milestoneImage.src = "ribbon.png";
+  milestoneImage.style.opacity = "1";
+  milestoneImage.style.display = "block";
+  celebration.play();
+} else if (
+  (grade <= 2 && laps % 5 === 0) ||
+  (grade >= 3 && (laps === 5 || (laps > 5 && (laps - 5) % 10 === 0)))
+) {
+  showSticker = true;
+  milestoneImage.src = "sticker.png";
+  milestoneImage.style.opacity = "1";
+  milestoneImage.style.display = "block";
+  tada.play();
+} else {
+  milestoneImage.style.opacity = "0";
+  setTimeout(() => {
+    milestoneImage.style.display = "none";
+  }, 500);
+  ding.play();
+}
+
 
   sendToGoogleSheet(id, name, grade, laps);
 }
