@@ -181,10 +181,19 @@
 
     const html5QrCode = new Html5Qrcode("reader");
     html5QrCode.start(
-      { facingMode: "environment" },
-      { fps: 10, qrbox: 250 },
-      onScanSuccess
-    );
+  { facingMode: "environment" },
+  {
+    fps: 10,
+    qrbox: 250,
+    rememberLastUsedCamera: true,
+    aspectRatio: 1.0
+  },
+  onScanSuccess
+);
+// 🔁 Light ping to keep camera/JS thread active
+setInterval(() => {
+  console.log("📷 Camera keep-alive ping");
+}, 30000); // every 30 seconds
 
     // CSV Upload Logic
     document.getElementById("csvUpload").addEventListener("change", (event) => {
