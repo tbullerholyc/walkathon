@@ -153,7 +153,13 @@
       let showSticker = false;
       let showRibbon = false;
 
-      if (laps === 50) {
+      if (laps === 45 && grade <= 2) {
+        showRibbon = true;
+        milestoneImage.src = "ribbon.png";
+        milestoneImage.style.opacity = "1";
+        milestoneImage.style.display = "block";
+        celebration.play();
+      } else if (laps === 55 && grade >= 3) {
         showRibbon = true;
         milestoneImage.src = "ribbon.png";
         milestoneImage.style.opacity = "1";
